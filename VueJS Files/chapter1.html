@@ -1,0 +1,158 @@
+<div id="app">
+    <table class="table table-striped">
+        <tr>
+            <th>#</th>
+            <th>Plot</th>
+            <th>Writer</th>
+            <th>Upvotes</th>
+            <th>Actions</th>
+        </tr>
+        <tr v-for="story in stories" is="story" :story="story"></tr>
+    </table>
+    <p class="lead">Here's a list of all your stories.
+        <button @click="createStory()" class="btn btn-primary">
+            Add a new one?
+        </button>
+    </p>
+
+</div>
+
+</div>
+<template id="template-story-raw">
+    <tr>
+        <td>
+            {{story.id}}
+        </td>
+        <td>
+        <span>
+            {{story.writer}}
+        </span>
+        <td>
+            <input type ="text" v-if="story.editing" v-model="story.plot" class="form-control"></input>
+            <span v-else>
+                {{ story.plot }}
+            </span>
+        </td>
+        <td><input v-if="story.editing" v-model="story.writer" class="form-control">
+            </input>
+            <!--in other occasions, show the story's writer-->
+            <span v-else>
+            {{story.writer}}
+            </span>
+        </td>
+
+        </td>
+        <td>
+            {{story.upvotes}}
+
+        </td>
+
+        <td>
+            <div v-if="!story.editing" class="btn-group">
+                <button @click="upvoteStory(story)" class="btn btn-primary">
+                    Upvote
+                </button>
+                <button @click="editStory(story)" class="btn btn-default">
+                    Edit
+                </button>
+                <button @click="deleteStory(story)" class="btn btn-danger">
+                    Delete
+                </button>
+            </div>
+
+            <div class="btn-group" v-else>
+                <button v-if="story.id" class="btn btn-primary" @click="updateStory(story)">
+                    Update Story
+                </button>
+                <!--If the story is new we want to store it-->
+                <button v-else class="btn btn-success" @click="storeStory(story)">
+                    Save New Story
+                </button>
+                <!--always show cancel-->
+                <button @click="story.editing=false" class="btn btn-default">
+                    Cancel
+                </button>
+            </div>
+        </td>
+    </tr>
+</template>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.0.1/vue.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/vue.resource/1.3.1/vue-resource.min.js"></script>
+
+<script type="text/javascript">
+    Vue.component('story', {
+        template: "#template-story-raw",
+        props: ['story'],
+        methods :{
+            upvoteStory :function(story){
+                story.upvotes++
+                this.$http.patch('http://127.0.0.1:8000/stories/'+story.id, story)
+            },
+            deleteStory: function(story) {
+                var index = this.$parent.stories.indexOf(story)
+                this.$parent.stories.splice(index, 1)
+                this.$http.delete('http://127.0.0.1:8000/stories/'+story.id )
+            },
+            editStory: function(story) {
+                story.editing = true;
+            },
+            updateStory: function (story) {
+                this.$http.patch('http://127.0.0.1:8000/stories/'+story.id , story)
+                story.editing = false;
+            },
+            storeStory: function (story) {
+                this.$http.post('http://127.0.0.1:8000/stories/', story).then(function(){
+                    story.editing = false;
+                    vm.fetchstories()
+                })
+
+            }
+        },
+
+    });
+    var vm = new Vue({
+        el: '#app',
+        data: {
+            stories: []
+        },
+        methods:{
+            createStory: function () {
+                var newStory = {
+
+                    "plot":null,
+                    "upvotes":0,
+                    "editing":true
+                };
+                this.stories.push(newStory);
+
+            },
+            fetchstories : function () {
+                this.$http({url:'http://127.0.0.1:8000/stories/',
+                    method: 'GET'
+                }).then(function(response){
+                    var storiesready= response.data.map(function(story){
+                        story.editing = false
+                        return story
+                    })
+                    Vue.set(vm,'stories',response.data)
+                })
+            }
+
+        },
+        mounted: function () {
+            this.fetchstories()
+        }
+
+    })
+</script>
