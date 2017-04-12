@@ -1,17 +1,4 @@
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.0.1/vue.js"></script>
-<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
-<!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-
-<!-- jQuery library -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
-
-<!-- Latest compiled JavaScript -->
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/vue.resource/1.3.1/vue-resource.min.js"></script>
-
-<script type="text/javascript">
     Vue.component('story', {
         template: "#template-story-raw",
         props: ['story'],
@@ -33,8 +20,9 @@
                 story.editing = false;
             },
             storeStory: function (story) {
-                this.$http.post('http://127.0.0.1:8000/stories/', story).then(function(){
-                    Vue.set(story,'id',response.data.id)
+                this.$http.post('http://127.0.0.1:8000/stories/', story).then(function(response){
+                    console.log(response.data.id)
+                    // Vue.set(story,'stories',response.data.results.id)
                     story.editing = false;
                 })
 
@@ -45,7 +33,8 @@
     var vm = new Vue({
         el: '#app',
         data: {
-            stories: []
+            stories: [],
+            pagination : []
         },
         methods:{
             createStory: function () {
@@ -58,16 +47,28 @@
                 this.stories.push(newStory);
 
             },
-            fetchstories : function () {
-                this.$http({url:'http://127.0.0.1:8000/stories/',
+            fetchstories : function (page_URL) {
+                var vm = this;
+                page_URL = page_URL || 'http://127.0.0.1:8000/stories/'
+                this.$http({url:page_URL,
                     method: 'GET'
                 }).then(function(response){
-                    var storiesready= response.data.map(function(story){
+                    var storiesready= response.data.results.map(function(story){
                         story.editing = false
                         return story
                     })
-                    Vue.set(vm,'stories',response.data)
+                    vm.paginations(response.data)
+                    Vue.set(vm,'stories',response.data.results)
                 })
+            },
+            paginations: function(data){
+                var pagination = {
+                    count :data.count,
+                    next: data.next ,
+                    previous: data.previous,
+                }
+
+                Vue.set(vm,'pagination',pagination)
             }
 
         },
@@ -76,4 +77,3 @@
         }
 
     })
-</script>
